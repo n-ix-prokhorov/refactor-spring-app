@@ -1,0 +1,22 @@
+spring:
+
+  logging:
+    level:
+      level.org.springframeowrk.test.web.servlet.resut: DEBUG
+
+  datasource:
+    url: jdbc:postgresql://prod-host.com:5432/refactoring-db
+    username: root-admin
+    password: password1234
+    driver-class-name: org.postgresql.Driver
+
+  mail:
+    host: smtp.prod-refactoring-app.com
+    port: 587
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+cors:
+  allowed-origins:
+    - '*'
