@@ -8,45 +8,42 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+
 public class Service {
 
     public Collection<CourierRewards> calculateDeliveryPayImpactFor(Courier courier,
-                                                                    Route orderDeliveryRoute,
+                                                                    List<Route> orderDeliveryRoutes,
                                                                     List<OrderDeliveryData> orderDeliveryData,
                                                                     List<CustomerDeliveryFeedback> deliveryFeedbacks,
-                                                                    List<DeliveryCompletenessRewardEnrollmentRule> deliveryCompletenessRewardEnrollmentRules,
-                                                                    List<DeliveryCompletenessPenalSanctionEnrollmentRule> deliveryCompletenessPenalSanctionsEnrollmentRules) {
+                                                                    List<DeliveryCompletenessRewardEnrollmentRule> deliveryCompletenessRewardEnrollmentRules) {
+        var allReceivedRewards = new ArrayList<CourierRewards>();
 
         for (var deliveryFeedback : deliveryFeedbacks) {
-
-            var devType = deliveryFeedback.type;
-            var allReceivedRewards = new ArrayList<>();
-
-            switch (devType) {
+            switch (deliveryFeedback.type) {
                 case FREE_STANDARD_DELIVERY:
                     if (courier.isEligibleForReward()) {
                         var rewardEnrollmentRules = new ArrayList<DeliveryCompletenessRewardEnrollmentRule>();
-
-                        for (var rewardRule : deliveryCompletenessRewardEnrollmentRules) {
-                            if (orderDeliveryRoute.isSaturatedByTrafficJams()) {
-                                rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
-                                        .filter(rule -> RuleType.TrafficProblemBypassingReward.equals(rule.getType()))
-                                        .collect(Collectors.toUnmodifiableList()));
-                            }
-                            if (orderDeliveryRoute.hasLargeDistance()) {
-                                if (orderDeliveryRoute.isGasolinePayed()) {
+                        for (var orderDeliveryRoute : orderDeliveryRoutes) {
+                            if (orderDeliveryRoute.getOrderId() == deliveryFeedback.getOrderId()) {
+                                if (orderDeliveryRoute.isSaturatedByTrafficJams()) {
                                     rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
-                                            .filter(rule -> RuleType.DistanceProblemBypassingReward.equals(rule.getType()))
+                                            .filter(rule -> RuleType.TrafficProblemBypassingReward.equals(rule.getType()))
+                                            .collect(Collectors.toUnmodifiableList()));
+                                }
+                                if (orderDeliveryRoute.hasLargeDistance()) {
+                                    if (orderDeliveryRoute.isGasolinePayed()) {
+                                        rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
+                                                .filter(rule -> RuleType.DistanceProblemBypassingReward.equals(rule.getType()))
+                                                .collect(Collectors.toUnmodifiableList()));
+                                    }
+                                }
+                                if (deliveryFeedback.wasDeliveredInTime()) {
+                                    rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
+                                            .filter(rule -> RuleType.EarlyDelivery.equals(rule.getType()))
                                             .collect(Collectors.toUnmodifiableList()));
                                 }
                             }
-                            if (deliveryFeedback.wasDeliveredInTime()) {
-                                rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
-                                        .filter(rule -> RuleType.EarlyDelivery.equals(rule.getType()))
-                                        .collect(Collectors.toUnmodifiableList()));
-                            }
                         }
-
 
                         for (var rewardEnrollmentRule : rewardEnrollmentRules) {
                             allReceivedRewards.addAll(rewardEnrollmentRule.process(courier, deliveryFeedback));
@@ -56,20 +53,20 @@ public class Service {
                     if (courier.isEligibleForReward()) {
                         var rewardEnrollmentRules = new ArrayList<DeliveryCompletenessRewardEnrollmentRule>();
 
-                        for (var rewardRule : deliveryCompletenessRewardEnrollmentRules) {
-                            if (deliveryFeedback.wasDeliveredOnWeekendsOrNationalHoliday()) {
-                                rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
-                                        .filter(rule -> RuleType.WeekendsOrHolidayReward.equals(rule.getType()))
-                                        .collect(Collectors.toUnmodifiableList()));
-                            }
-                            if (!deliveryFeedback.wasDamaged()) {
-                                rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
-                                        .filter(rule -> RuleType.PremiumNotDamagedReward.equals(rule.getType()))
-                                        .collect(Collectors.toUnmodifiableList()));
+                        for (var orderDeliveryRoute : orderDeliveryRoutes) {
+                            if (orderDeliveryRoute.getOrderId() == deliveryFeedback.getOrderId()) {
+                                if (deliveryFeedback.wasDeliveredOnWeekendsOrNationalHoliday()) {
+                                    rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
+                                            .filter(rule -> RuleType.WeekendsOrHolidayReward.equals(rule.getType()))
+                                            .collect(Collectors.toUnmodifiableList()));
+                                }
+                                if (!deliveryFeedback.wasDamaged()) {
+                                    rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
+                                            .filter(rule -> RuleType.PremiumNotDamagedReward.equals(rule.getType()))
+                                            .collect(Collectors.toUnmodifiableList()));
+                                }
                             }
                         }
-
-
                         for (var rewardEnrollmentRule : rewardEnrollmentRules) {
                             allReceivedRewards.addAll(rewardEnrollmentRule.process(courier, deliveryFeedback));
                         }
@@ -78,22 +75,23 @@ public class Service {
                     if (courier.isEligibleForReward()) {
                         var rewardEnrollmentRules = new ArrayList<DeliveryCompletenessRewardEnrollmentRule>();
 
-                        for (var rewardRule : deliveryCompletenessRewardEnrollmentRules) {
-                            if (orderDeliveryRoute.hadCustomsDeclarationReturns()) {
-                                rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
-                                        .filter(rule -> RuleType.CustomsProblemBypassingReward.equals(rule.getType()))
-                                        .collect(Collectors.toUnmodifiableList()));
-                            }
-                            var deliveryRepresentation = orderDeliveryData.stream()
-                                    .filter(currentOrderDeliveryData -> Objects.equals(currentOrderDeliveryData.getOrderId(), deliveryFeedback.getOrderId()))
-                                    .findFirst().get();
-                            if (!deliveryFeedback.wasDamaged() && deliveryRepresentation.isOrderProperlyPacked()) {
-                                rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
-                                        .filter(rule -> RuleType.GlobalNotDamagedReward.equals(rule.getType()))
-                                        .collect(Collectors.toUnmodifiableList()));
+                        for (var orderDeliveryRoute : orderDeliveryRoutes) {
+                            if (orderDeliveryRoute.getOrderId() == deliveryFeedback.getOrderId()) {
+                                if (orderDeliveryRoute.hadCustomsDeclarationReturns()) {
+                                    rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
+                                            .filter(rule -> RuleType.CustomsProblemBypassingReward.equals(rule.getType()))
+                                            .collect(Collectors.toUnmodifiableList()));
+                                }
+                                var deliveryRepresentation = orderDeliveryData.stream()
+                                        .filter(currentOrderDeliveryData -> Objects.equals(currentOrderDeliveryData.getOrderId(), deliveryFeedback.getOrderId()))
+                                        .findFirst();
+                                if (deliveryRepresentation.isPresent() && deliveryRepresentation.get().isOrderProperlyPacked() && !deliveryFeedback.wasDamaged()) {
+                                    rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
+                                            .filter(rule -> RuleType.GlobalNotDamagedReward.equals(rule.getType()))
+                                            .collect(Collectors.toUnmodifiableList()));
+                                }
                             }
                         }
-
                         for (var rewardEnrollmentRule : rewardEnrollmentRules) {
                             allReceivedRewards.addAll(rewardEnrollmentRule.process(courier, deliveryFeedback));
                         }
@@ -108,7 +106,7 @@ public class Service {
 
             }
         }
-        return List.of();
+        return allReceivedRewards;
     }
 
     enum DeliveryType {
@@ -123,6 +121,8 @@ public class Service {
     }
 
     class Route {
+
+
         boolean isSaturatedByTrafficJams() {
             return new Random().nextBoolean();
         }
@@ -138,11 +138,14 @@ public class Service {
         public boolean hadCustomsDeclarationReturns() {
             return new Random().nextBoolean();
         }
+
+        public long getOrderId() {
+            return new Random().nextLong();
+        }
     }
 
     class CustomerDeliveryFeedback {
         DeliveryType type;
-
 
         public boolean wasDeliveredOnWeekendsOrNationalHoliday() {
             return new Random().nextBoolean();
@@ -156,22 +159,20 @@ public class Service {
             return new Random().nextBoolean();
         }
 
-        public Long getOrderId() {
+        public long getOrderId() {
             return new Random().nextLong();
         }
 
     }
 
     class OrderDeliveryData {
-        Long orderId;
-        DeliveryType type;
 
         public boolean isOrderProperlyPacked() {
             return new Random().nextBoolean();
         }
 
-        public Long getOrderId() {
-            return orderId;
+        public long getOrderId() {
+            return new Random().nextLong();
         }
     }
 
@@ -197,34 +198,9 @@ public class Service {
         TrafficProblemBypassingReward, DistanceProblemBypassingReward, EarlyDelivery, WeekendsOrHolidayReward, PremiumNotDamagedReward, CustomsProblemBypassingReward, GlobalNotDamagedReward
     }
 
-    abstract class PenalSanctionRule extends EnrollmentRule {
-        RuleType type;
-    }
-
-    class DeliveryCompletenessPenalSanctionEnrollmentRule extends PenalSanctionRule {
-
-        @Override
-        public Collection<? extends CourierRewards> process(Courier courier, CustomerDeliveryFeedback deliveryFeedback) {
-            return null;
-        }
-    }
-
     abstract class CourierRewards {
         abstract BigDecimal getBonus();
     }
 
-    class CalculatedCourierDeliveryRewards extends CourierRewards {
-        BigDecimal getBonus() {
-            return BigDecimal.ONE;
-        }
-    }
-
-    abstract class CourierPenalties {
-
-    }
-
-    class CalculatedCourierDeliveryPenalties extends CourierPenalties {
-
-    }
 
 }
