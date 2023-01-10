@@ -4,10 +4,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Collectors;
-
 
 public class Service {
 
@@ -30,18 +28,7 @@ public class Service {
                                             .filter(rule -> RuleType.TrafficProblemBypassingReward.equals(rule.getType()))
                                             .collect(Collectors.toUnmodifiableList()));
                                 }
-                                if (orderDeliveryRoute.hasLargeDistance()) {
-                                    if (orderDeliveryRoute.isGasolinePayed()) {
-                                        rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
-                                                .filter(rule -> RuleType.DistanceProblemBypassingReward.equals(rule.getType()))
-                                                .collect(Collectors.toUnmodifiableList()));
-                                    }
-                                }
-                                if (deliveryFeedback.wasDeliveredInTime()) {
-                                    rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
-                                            .filter(rule -> RuleType.EarlyDelivery.equals(rule.getType()))
-                                            .collect(Collectors.toUnmodifiableList()));
-                                }
+                                // more conditions may be added in future
                             }
                         }
 
@@ -60,11 +47,7 @@ public class Service {
                                             .filter(rule -> RuleType.WeekendsOrHolidayReward.equals(rule.getType()))
                                             .collect(Collectors.toUnmodifiableList()));
                                 }
-                                if (!deliveryFeedback.wasDamaged()) {
-                                    rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
-                                            .filter(rule -> RuleType.PremiumNotDamagedReward.equals(rule.getType()))
-                                            .collect(Collectors.toUnmodifiableList()));
-                                }
+                                // more conditions may be added in future
                             }
                         }
                         for (var rewardEnrollmentRule : rewardEnrollmentRules) {
@@ -82,14 +65,7 @@ public class Service {
                                             .filter(rule -> RuleType.CustomsProblemBypassingReward.equals(rule.getType()))
                                             .collect(Collectors.toUnmodifiableList()));
                                 }
-                                var deliveryRepresentation = orderDeliveryData.stream()
-                                        .filter(currentOrderDeliveryData -> Objects.equals(currentOrderDeliveryData.getOrderId(), deliveryFeedback.getOrderId()))
-                                        .findFirst();
-                                if (deliveryRepresentation.isPresent() && deliveryRepresentation.get().isOrderProperlyPacked() && !deliveryFeedback.wasDamaged()) {
-                                    rewardEnrollmentRules.addAll(deliveryCompletenessRewardEnrollmentRules.stream()
-                                            .filter(rule -> RuleType.GlobalNotDamagedReward.equals(rule.getType()))
-                                            .collect(Collectors.toUnmodifiableList()));
-                                }
+                                // more conditions may be added in future
                             }
                         }
                         for (var rewardEnrollmentRule : rewardEnrollmentRules) {
@@ -121,7 +97,6 @@ public class Service {
     }
 
     class Route {
-
 
         boolean isSaturatedByTrafficJams() {
             return new Random().nextBoolean();
@@ -201,6 +176,4 @@ public class Service {
     abstract class CourierRewards {
         abstract BigDecimal getBonus();
     }
-
-
 }
